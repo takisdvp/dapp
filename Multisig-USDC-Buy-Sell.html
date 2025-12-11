@@ -2289,36 +2289,34 @@
          * Initializes Web3 and connects to MetaMask.
          */
         window.initWeb3 = async function() {
-            if (window.web3 && window.web3.currentProvider) {
-                console.log("Web3 already initialized.");
-                return;
-            }
-            if (window.ethereum) {
-                window.web3 = new Web3(window.ethereum);
-                try {
-                    window.accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
-                    window.contract = new window.web3.eth.Contract(window.contractABI, window.contractAddress);
-                    window.displayMessage(`Connected to MetaMask with account: ${window.accounts[0]}.`, 'success');
-                    console.log("Contract methods available (Page 4):", Object.keys(window.contract.methods));
-                    window.ethereum.on('accountsChanged', (newAccounts) => {
-                        window.accounts = newAccounts;
-                        if (window.accounts.length === 0) {
-                            window.displayMessage('MetaMask account disconnected. Please connect.', 'error');
-                        } else {
-                            window.displayMessage(`MetaMask account changed to: ${window.accounts[0]}.`, 'info');
-                        }
-                    });
-                    window.ethereum.on('chainChanged', (chainId) => {
-                        window.displayMessage(`MetaMask network changed to Chain ID: ${chainId}. Please ensure it's the correct network for the contract.`, 'info');
-                    });
-                } catch (error) {
-                    console.error("User denied account access or other error:", error);
-                    window.displayMessage("Failed to connect to MetaMask. Please ensure MetaMask is unlocked and you've granted access.", 'error');
-                }
-            } else {
-                window.displayMessage("MetaMask is not installed. Please install it to use this application: https://metamask.io/download/", 'error');
-            }
-        };
+    if (window.web3?.currentProvider && window.accounts?.length) return;
+    if (!window.ethereum) {
+        window.displayMessage("MetaMask is not installed. Please install it to use this application: https://metamask.io/download/ ", 'error');
+        return;
+    }
+    try {
+        const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+        if (!accounts.length) throw new Error('No accounts');
+        window.web3 = new Web3(window.ethereum);
+        window.accounts = accounts;
+        window.contract = new window.web3.eth.Contract(window.contractABI, window.contractAddress);
+        window.displayMessage(`Connected to MetaMask with account: ${window.accounts[0]}.`, 'success');
+        console.log("Contract methods available (Page 4):", Object.keys(window.contract.methods));
+        window.ethereum.on('accountsChanged', (newAccounts) => {
+            window.accounts = newAccounts;
+            window.displayMessage(
+                newAccounts.length
+                    ? `Account changed to: ${newAccounts[0]}`
+                    : 'MetaMask disconnected. Please connect.',
+                newAccounts.length ? 'info' : 'error'
+            );
+        });
+        window.ethereum.on('chainChanged', () => window.location.reload());
+    } catch (error) {
+        console.error("User denied account access or other error:", error);
+        window.displayMessage("Failed to connect to MetaMask. Please ensure MetaMask is unlocked and you've granted access.", 'error');
+    }
+};
         /**
          * Helper function to send a transaction to the contract.
          * @param {string} methodName The name of the contract method to call.
