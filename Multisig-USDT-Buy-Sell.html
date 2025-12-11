@@ -9,7 +9,7 @@
 <link rel="stylesheet" href="Multisig-USDT-Buy-Sell.css" media="screen">
     <script class="u-script" type="text/javascript" src="jquery.js" defer=""></script>
     <script class="u-script" type="text/javascript" src="nicepage.js" defer=""></script>
-    <meta name="generator" content="Nicepage 7.14.0, nicepage.com">
+    <meta name="generator" content="Nicepage 8.0.6, nicepage.com">
     
     
     
@@ -2326,6 +2326,7 @@
          * @param {string} [value='0'] The amount of Ether to send with the transaction, in Wei. Defaults to '0'.
          */
         window.sendTransaction = async function(methodName, args, value = '0') {
+		if (!ensureWeb3()) return;
             if (!window.web3 || !window.accounts || window.accounts.length === 0 || !window.contract) {
                 window.displayMessage("MetaMask not connected or Web3 not initialized. Please connect MetaMask.", 'error');
                 return;
@@ -2358,6 +2359,19 @@
          * @param {string} address The address string to validate.
          * @returns {boolean} True if valid, false otherwise.
          */
+		 window.ensureWeb3 = function () {
+  if (window.ethereum) return true;
+  Swal.fire({
+    title: 'No wallet found',
+    text: 'Please open this page inside MetaMask / Trust Wallet browser or scan the QR code.',
+    showCancelButton: true,
+    confirmButtonText: 'Open in MetaMask',
+    cancelButtonText: 'Cancel'
+  }).then(r => {
+    if (r.isConfirmed) location.href = `https://metamask.app.link/dapp/${encodeURIComponent(location.href)}`;
+  });
+  return false;
+};
         window.isValidAddress = function(address) {
             return window.web3 && window.web3.utils.isAddress(address);
         };
@@ -2426,7 +2440,7 @@
     
     <footer class="u-align-center u-black u-clearfix u-container-align-center u-footer" id="sec-8726"><div class="u-clearfix u-sheet u-sheet-1">
         <p class="u-align-center u-small-text u-text u-text-variant u-text-1"> © All Rights Reserved, Decentralized Application , 2025 , Destrier LLC, 1942 Broadway St. , STE 314C, Boulder, CO 80302, US<br>
-          <a href="#" class="u-active-none u-border-none u-btn u-button-link u-button-style u-hover-none u-none u-text-body-alt-color u-btn-1">www.nickelium.com</a>
+          <a href="www.nickelium.com" class="u-active-none u-border-none u-btn u-button-link u-button-style u-hover-none u-none u-text-body-alt-color u-btn-1" target="_blank">www.nickelium.com</a>
         </p>
       </div></footer><section class="u-align-center u-clearfix u-cookies-consent u-grey-80 u-cookies-consent" id="sec-b719">
       <div class="u-clearfix u-sheet u-valign-middle u-sheet-1">
