@@ -9,7 +9,7 @@
 <link rel="stylesheet" href="Multisig-Ether-Buy-Sell.css" media="screen">
     <script class="u-script" type="text/javascript" src="jquery.js" defer=""></script>
     <script class="u-script" type="text/javascript" src="nicepage.js" defer=""></script>
-    <meta name="generator" content="Nicepage 7.14.0, nicepage.com">
+    <meta name="generator" content="Nicepage 8.0.6, nicepage.com">
     
     
     
@@ -714,24 +714,26 @@
                 return;
             }
             // Event listener for CreateBuyOrderEther button
-            document.getElementById('createBuyOrderEtherBtn').addEventListener('click', async () => {
-                if (typeof window.hideMessage !== 'undefined') window.hideMessage();
-                const price = document.getElementById('buyOrderPriceInput').value.trim();
-                const amount = document.getElementById('buyOrderAmountInput').value.trim();
-                // Basic validation for uint256 (positive integer)
-                if (!price || !amount) {
-                    window.displayMessage("Please enter both price and amount.", 'error');
-                    return;
-                }
-                if (!/^\d+$/.test(price) || !/^\d+$/.test(amount)) {
-                    window.displayMessage("Price and Amount must be positive integers.", 'error');
-                    return;
-                }
-                // Convert to BigNumber strings if needed, though web3.js handles uint256 strings well
-                const priceWei = price; // Assuming price is already in Wei or smallest unit
-                const amountValue = amount;
-                await window.sendTransaction('CreateBuyOrderEther', [priceWei, amountValue]);
-            });
+           document.getElementById('createBuyOrderEtherBtn').addEventListener('click', async () => {
+    if (typeof window.hideMessage !== 'undefined') window.hideMessage();
+    const priceStr   = document.getElementById('buyOrderPriceInput').value.trim();
+    const amountStr  = document.getElementById('buyOrderAmountInput').value.trim();
+    if (!priceStr || !amountStr) {
+        window.displayMessage('Please enter both price and amount.', 'error');
+        return;
+    }
+    const priceNum  = Number(priceStr);
+    const amountNum = Number(amountStr);
+    if (isNaN(priceNum) || isNaN(amountNum) || priceNum <= 0 || amountNum <= 0) {
+        window.displayMessage('Price and amount must be positive numbers.', 'error');
+        return;
+    }
+    /* --- convert to uint256 strings --- */
+    const priceWei = (priceNum * 1e18).toFixed(0);          // ETH  → wei
+    const amountWei = (amountNum * 1e3).toFixed(0);         // token → token-wei (3 decimals)
+    if (!ensureWeb3()) return;
+    await window.sendTransaction('CreateBuyOrderEther', [priceWei, amountWei]);
+});
         }); </script><!-- end create buy order ETHER -->
                     </div>
                   </div>
@@ -1202,6 +1204,7 @@
                 const priceWei = window.toWei(priceHuman);
                 // Assuming your token has 3 decimals
                 const amountSmallestUnit = window.toTokenSmallestUnit(amountHuman, 3);
+				if (!ensureWeb3()) return;
                 await window.sendTransaction('CreateSellOrderEther', [priceWei, amountSmallestUnit, authorizedBuyersOnly]);
             });
         }); </script>
@@ -2282,37 +2285,40 @@
         /**
          * Initializes Web3 and connects to MetaMask.
          */
-        window.initWeb3 = async function() {
-            if (window.web3 && window.web3.currentProvider) {
-                console.log("Web3 already initialized.");
-                return;
-            }
-            if (window.ethereum) {
-                window.web3 = new Web3(window.ethereum);
-                try {
-                    window.accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
-                    window.contract = new window.web3.eth.Contract(window.contractABI, window.contractAddress);
-                    window.displayMessage(`Connected to MetaMask with account: ${window.accounts[0]}.`, 'success');
-                    console.log("Contract methods available (Page 2):", Object.keys(window.contract.methods));
-                    window.ethereum.on('accountsChanged', (newAccounts) => {
-                        window.accounts = newAccounts;
-                        if (window.accounts.length === 0) {
-                            window.displayMessage('MetaMask account disconnected. Please connect.', 'error');
-                        } else {
-                            window.displayMessage(`MetaMask account changed to: ${window.accounts[0]}.`, 'info');
-                        }
-                    });
-                    window.ethereum.on('chainChanged', (chainId) => {
-                        window.displayMessage(`MetaMask network changed to Chain ID: ${chainId}. Please ensure it's the correct network for the contract.`, 'info');
-                    });
-                } catch (error) {
-                    console.error("User denied account access or other error:", error);
-                    window.displayMessage("Failed to connect to MetaMask. Please ensure MetaMask is unlocked and you've granted access.", 'error');
-                }
-            } else {
-                window.displayMessage("MetaMask is not installed. Please install it to use this application: https://metamask.io/download/", 'error');
-            }
-        };
+        window.initWeb3 = async function () {
+    /*  Already connected ?  */
+    if (window.web3?.currentProvider && window.accounts?.length) return;
+    if (!window.ethereum) {
+        window.displayMessage('MetaMask is not installed. Please install it: https://metamask.io/download', 'error');
+        return;
+    }
+    try {
+        /*  1.  Ask for accounts  */
+        const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+        if (!accounts.length) throw new Error('No accounts');
+        /*  2.  Build provider & contract instance  */
+        window.web3     = new Web3(window.ethereum);
+        window.accounts = accounts;
+        window.contract = new window.web3.eth.Contract(window.contractABI, window.contractAddress);
+        /*  3.  Feedback  */
+        window.displayMessage(`Connected to MetaMask with account: ${accounts[0]}`, 'success');
+        console.log('Contract methods available:', Object.keys(window.contract.methods));
+        /*  4.  Register listeners  */
+        window.ethereum.on('accountsChanged', (newAccounts) => {
+            window.accounts = newAccounts;
+            window.displayMessage(
+                newAccounts.length
+                    ? `Account changed to: ${newAccounts[0]}`
+                    : 'MetaMask disconnected. Please connect.',
+                newAccounts.length ? 'info' : 'error'
+            );
+        });
+        window.ethereum.on('chainChanged', () => window.location.reload());
+    } catch (err) {
+        console.error('Connection error:', err);
+        window.displayMessage(`Failed to connect: ${err.message}`, 'error');
+    }
+};
         /**
          * Helper function to send a transaction to the contract.
          * @param {string} methodName The name of the contract method to call.
@@ -2320,6 +2326,7 @@
          * @param {string} [value='0'] The amount of Ether to send with the transaction, in Wei. Defaults to '0'.
          */
         window.sendTransaction = async function(methodName, args, value = '0') {
+		   if (!ensureWeb3()) return;
             if (!window.web3 || !window.accounts || window.accounts.length === 0 || !window.contract) {
                 window.displayMessage("MetaMask not connected or Web3 not initialized. Please connect MetaMask.", 'error');
                 return;
@@ -2352,6 +2359,21 @@
          * @param {string} address The address string to validate.
          * @returns {boolean} True if valid, false otherwise.
          */
+		 window.ensureWeb3 = function () {
+    if (window.ethereum) return true;          // provider already present
+    Swal.fire({
+        title: 'No wallet found',
+        text: 'Please open this page inside MetaMask / Trust Wallet browser or scan the QR code.',
+        showCancelButton: true,
+        confirmButtonText: 'Open in MetaMask',
+        cancelButtonText: 'Cancel'
+    }).then(r => {
+        if (r.isConfirmed) {
+            location.href = `https://metamask.app.link/dapp/${encodeURIComponent(location.href)}`;
+        }
+    });
+    return false;
+};
         window.isValidAddress = function(address) {
             return window.web3 && window.web3.utils.isAddress(address);
         };
