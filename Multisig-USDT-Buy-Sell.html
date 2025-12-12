@@ -2120,7 +2120,7 @@
             display: none;
         } </style>
                     <div id="statusMessage" class="hidden message-box"></div><!-- This block primarily handles Web3 initialization and shared functions for Page 3 -->
-                    <p style="color: white; text-align: center; margin-bottom: 30px;">Create, confirm, and manage buy/sell orders using USDC.</p>
+                    <p style="color: white; text-align: center; margin-bottom: 30px;">Create, confirm, and manage buy/sell orders using USDT.</p>
                     <script src="https://cdn.jsdelivr.net/npm/web3@1.7.0/dist/web3.min.js"></script>
                     <script> // Declare global variables attached to the window object for Page 3
         window.contractAddress = "0x4F9A728E300026E40A0d1c5E68806A17a530221d";
@@ -2128,27 +2128,27 @@
         window.contract = null;
         window.accounts = [];
         window.statusMessageDiv = null; // Will be assigned on load
-        // ABI for functions specific to Page 3 (USDC orders + common order management)
+        // ABI for functions specific to Page 3 (USDT orders + common order management)
         window.contractABI = [
-            // CreateBuyOrderUSDC ABI
+            // CreateBuyOrderUSDT ABI
             {
                 "inputs": [
                     { "internalType": "uint256", "name": "_price", "type": "uint256" },
                     { "internalType": "uint256", "name": "_amount", "type": "uint256" }
                 ],
-                "name": "CreateBuyOrderUSDC",
+                "name": "CreateBuyOrderUSDT",
                 "outputs": [],
                 "stateMutability": "nonpayable",
                 "type": "function"
             },
-            // CreateSellOrderUSDC ABI
+            // CreateSellOrderUSDT ABI
             {
                 "inputs": [
                     { "internalType": "uint256", "name": "_price", "type": "uint256" },
                     { "internalType": "uint256", "name": "_amount", "type": "uint256" },
                     { "internalType": "bool", "name": "_authorizedBuyersOnly", "type": "bool" }
                 ],
-                "name": "CreateSellOrderUSDC",
+                "name": "CreateSellOrderUSDT",
                 "outputs": [],
                 "stateMutability": "nonpayable",
                 "type": "function"
@@ -2392,7 +2392,7 @@
         };
         /**
          * Converts a human-readable token amount to its smallest unit based on decimals.
-         * Assumes 3 decimals for your token (Nickelium) and 6 for USDC.
+         * Assumes 3 decimals for your token (Nickelium) and 6 for USDT.
          * @param {string} tokenAmount The token amount as a string (e.g., "1.2", "100").
          * @param {number} decimals The number of decimals for the token.
          * @returns {string} The token amount in its smallest unit as a string.
